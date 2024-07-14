@@ -9,10 +9,10 @@ In this Repo, you can easily fine-tune different variations of the Whisper model
 ## Auxilary files
 
 The required packages are listed in the "requirements.txt" file and you can easily install all of them using: 
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 It would be better to make a new Python environment using `python3 -m venv myenv` , after that, activate the venv using `source myvenv/bin/activate` and then install the packages.
 
-For running on the servers by Slurm, you can use "slurm_run.sh" file.
+To run on the servers by Slurm, you can use the [slurm_run.sh](slurm_run.sh) file.
 
-The "files_test.csv" and "files_train.csv" are helpful for understanding better.
+The "files_test.csv" and "files_train.csv" help us understand better the required files for testing and training.
