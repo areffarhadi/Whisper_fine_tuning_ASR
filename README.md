@@ -4,6 +4,9 @@ In this Repo, you can easily fine-tune different variations of the Whisper model
 1. [prepare_data.py](prepare_data.py)     :::: to prepare ".csv" files for train and test
 2. [train.py](train.py)                   :::: train and save the fine-tuned Whisper model
 3. [decode.py](decode.py)                 :::: decode the test or any evaluation ".wav" file
+4. [whisper_transcribe_WER.py](whisper_transcribe_WER.py) ::: another (easier) method for utilizing the Whisper model in transcription.
+
+*** You can use different versions of the [openai Whisper model](https://huggingface.co/openai/whisper-large-v2).
 
 
 ## Auxilary files
