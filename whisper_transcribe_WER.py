@@ -6,13 +6,39 @@ from jiwer import process_words
 
 
 class TranscriberWER:
+    """Transcription and WER evaluation class.
+
+    Parameters
+    ----------
+    csv_file : str
+        Path to comma-separated file with following header(s):
+            "Path" -> path to wav file to transcribe
+            "Text" (optional) -> ground truth transcription of file
+        Evaluation is automatically enabled it "Text" is included in the CSV file.
+    output_file : str
+        Output file for transcriptions and (optionally) WER.
+        Default = ./transcriptions_with_wer.txt.
+    language : str
+        Language of transcription. If None, uses Whisper automatic language detection.
+        Default = None.
+    model : str
+        Pre-trained OpenAI-Whisper model. Default = 'large-v2'.
+    device : str
+        Torch device. Default = 'cuda'.
+
+    Methods:
+    --------
+    process_batch
+        Process the whole csv_file.
+    """
+
     def __init__(
         self,
         csv_file: str,
         output_file: str = "transcriptions_with_wer.txt",
         language: str = None,
         model: str = "large-v2",
-        device: str = "cpu",
+        device: str = "cuda",
     ):
         self.model: whisper.Whisper = whisper.load_model(model, device=device)
         self.df: pd.DataFrame = pd.read_csv(csv_file)
@@ -99,7 +125,7 @@ class TranscriberWER:
                 wer=None,
             )
 
-    def process_batch(self):
+    def process_batch(self) -> None:
         for index, row in self.df.iterrows():
             self._process_row(row=row)
 
@@ -153,9 +179,11 @@ if __name__ == "__main__":
     )
     args = argparser.parse_args()
 
-    main(
+    # Transcribe
+    TranscriberWER(
         csv_file=args.csv_file,
         output_file=args.output_file,
         model=args.model,
         device=args.device,
-    )
+        language=args.language,
+    ).process_batch()
