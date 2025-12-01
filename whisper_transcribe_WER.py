@@ -21,85 +21,103 @@ class TranscriberWER:
         if "Text" in df.columns:
             self.evaluate: bool = True
             self.output_str: str = "FileName\tTranscription\tGroundTruth\tWER%\n"
+            self.total_errors: int = 0
+            self.total_words: int = 0
         else:
             print("No ground truth transcription in csv file -> no evaluation!")
             self.output_str: str = "FileName\tTranscription\n"
 
-
-def main() -> None:
-    pass
-
-
-# Load the Whisper large-v2 model on GPU
-model = whisper.load_model("large-v2", device="cuda")
-
-# Path to the CSV file
-csv_file = "files_test.csv"
-
-# Output file
-output_file = "transcriptions_with_wer.txt"
-
-# Load the CSV file
-df = pd.read_csv(csv_file)
-
-# Initialize the output file with header
-with open(output_file, "w") as f:
-    f.write("FileName\tTranscription\tGroundTruth\tWER%\n")
-
-# Variables to store total errors and total number of words
-total_errors = 0
-total_words = 0
-
-# Process each row in the CSV
-for index, row in df.iterrows():
-    wav_file_path = row["Path"]
-    ground_truth_text = row["Text"]
-
-    print(f"Transcribing {wav_file_path} ...")
-
-    # Transcribe the audio file with language set to English
-    result = model.transcribe(wav_file_path, language="en")
-
-    # Extract the transcription text
-    transcription_text = result["text"]
-
-    # Calculate WER
-    measures = process_words(
-        ground_truth_text.lower(),
-        transcription_text.lower(),
-    )
-    current_wer = measures["wer"]
-    current_errors = (
-        measures["substitutions"] + measures["deletions"] + measures["insertions"]
-    )
-    current_total_words = (
-        measures["hits"] + measures["substitutions"] + measures["deletions"]
-    )
-
-    # Update total errors and words
-    total_errors += current_errors
-    total_words += current_total_words
-
-    # Convert WER to percentage
-    wer_percentage = current_wer * 100
-
-    # Append the filename, transcription, ground truth, and WER to the output file
-    with open(output_file, "a") as f:
-        f.write(
-            f"{os.path.basename(wav_file_path)}\t{transcription_text}\t{ground_truth_text}\t{wer_percentage:.2f}\n"
+    def _evaluate_transcription(
+        self,
+        transcription_text: str,
+        ground_truth_text: str,
+    ) -> float:
+        measures: dict = process_words(
+            reference=ground_truth_text.lower(),
+            hypothesis=transcription_text.lower(),
+        )
+        current_wer: float = measures["wer"]
+        current_errors: int = (
+            measures["substitutions"] + measures["deletions"] + measures["insertions"]
+        )
+        current_total_words: int = (
+            measures["hits"] + measures["substitution"] + measures["deletions"]
         )
 
-    print(f"Transcription of {wav_file_path} done with WER: {wer_percentage:.2f}%")
+        self.total_errors += current_errors
+        self.total_words += current_total_words
 
-# Calculate total WER
-total_wer = (total_errors / total_words) * 100 if total_words > 0 else 0
+        # return wer %
+        return current_wer * 100
 
-# Write the total WER to the output file
-with open(output_file, "a") as f:
-    f.write(f"\nTotal WER: {total_wer:.2f}%\n")
+    def _update_output(
+        self,
+        wav_file_path: str,
+        transcription_text: str,
+        ground_truth_text: str,
+        wer: float,
+    ):
+        self.output_str += f"{os.path.basename(wav_file_path)}\t"
+        self.output_str += f"{transcription_text}\t"
+        if self.evaluate:
+            self.output_str += f"{ground_truth_text}\t"
+            self.output_str += f"{wer:.2f}\n"
 
-print(f"Transcriptions and WERs have been saved to {output_file}")
-print(f"Total WER: {total_wer:.2f}%")
+    def _process_row(self, row: pd.Series) -> None:
+        wav_file_path: str = row["Path"]
+
+        print(f"Transcribing {wav_file_path}")
+
+        result: dict = self.model.transcribe(
+            wav_file_path,
+            language=self.language,
+        )
+
+        transcription_text: str = result["text"]
+
+        if self.evaluate:
+            ground_truth_text: str = row["Text"]
+            wer: float = self._evaluate_transcription(
+                transcription_text=transcription_text,
+                ground_truth_text=ground_truth_text,
+            )
+            print(f"Transcription of {wav_file_path} done with WER: {wer:.2f}%")
+
+            self._update_output(
+                wav_file_path=wav_file_path,
+                transcription_text=transcription_text,
+                ground_truth_text=ground_truth_text,
+                wer=wer,
+            )
+
+        else:
+            print(f"Transcription of {wav_file_path} done")
+            self._update_output(
+                wav_file_path=wav_file_path,
+                transcription_text=transcription_text,
+                ground_truth_text=None,
+                wer=None,
+            )
+
+    def process_batch(self):
+        for index, row in self.df.iterrows():
+            self._process_row(row=row)
+
+        # Batch stats
+        if self.evaluate:
+            total_wer: float = (
+                (self.total_errors / self.total_words) * 100
+                if self.total_words > 0
+                else 0
+            )
+            self.output_str += f"\nTotal WER: {total_wer:.2f}%\n"
+            print(f"Total WER: {total_wer:.2f}%")
+
+        # Write output file
+        with open(self.output_file, "w") as f:
+            f.write(self.output_str)
+
+        print(f"Output file ready at {self.output_file}")
 
 
 if __name__ == "__main__":
