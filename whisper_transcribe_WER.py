@@ -1,7 +1,19 @@
+from argparse import ArgumentParser
 import os
 import whisper
 import pandas as pd
 from jiwer import process_words
+
+
+def main(
+    csv_file: str,
+    output_file: str = "transcriptions_with_wer.txt",
+    language: str = None,
+    model: str = "large-v2",
+    device: str = "cpu",
+) -> None:
+    pass
+
 
 # Load the Whisper large-v2 model on GPU
 model = whisper.load_model("large-v2", device="cuda")
@@ -73,3 +85,44 @@ with open(output_file, "a") as f:
 
 print(f"Transcriptions and WERs have been saved to {output_file}")
 print(f"Total WER: {total_wer:.2f}%")
+
+
+if __name__ == "__main__":
+    argparser = ArgumentParser()
+    argparser.add_argument(
+        "csv_file",
+        type=str,
+        help="Full path to the csv file containing at minimum the column 'Path' with the path to the audio files.",
+    )
+    argparser.add_argument(
+        "--output_file",
+        type=str,
+        default="transcriptions_with_wer.txt",
+        help="Path to the output file (.txt). Default is './transcriptions_with_wer.txt'",
+    )
+    argparser.add_argument(
+        "--language",
+        type=str,
+        default=None,
+        help="Whisper model language; if None automatic detection. Default is None",
+    )
+    argparser.add_argument(
+        "--model",
+        type=str,
+        default="large-v2",
+        help="Whisper model. Default is 'large-v2'",
+    )
+    argparser.add_argument(
+        "--device",
+        type=str,
+        default="cpu",
+        help="Torch device; default is 'cpu'",
+    )
+    args = argparser.parse_args()
+
+    main(
+        csv_file=args.csv_file,
+        output_file=args.output_file,
+        model=args.model,
+        device=args.device,
+    )
