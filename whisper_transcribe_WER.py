@@ -5,13 +5,28 @@ import pandas as pd
 from jiwer import process_words
 
 
-def main(
-    csv_file: str,
-    output_file: str = "transcriptions_with_wer.txt",
-    language: str = None,
-    model: str = "large-v2",
-    device: str = "cpu",
-) -> None:
+class TranscriberWER:
+    def __init__(
+        self,
+        csv_file: str,
+        output_file: str = "transcriptions_with_wer.txt",
+        language: str = None,
+        model: str = "large-v2",
+        device: str = "cpu",
+    ):
+        self.model: whisper.Whisper = whisper.load_model(model, device=device)
+        self.df: pd.DataFrame = pd.read_csv(csv_file)
+        self.language: str = language
+        self.output_file: str = output_file
+        if "Text" in df.columns:
+            self.evaluate: bool = True
+            self.output_str: str = "FileName\tTranscription\tGroundTruth\tWER%\n"
+        else:
+            print("No ground truth transcription in csv file -> no evaluation!")
+            self.output_str: str = "FileName\tTranscription\n"
+
+
+def main() -> None:
     pass
 
 
