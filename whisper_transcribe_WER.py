@@ -1,7 +1,7 @@
 import os
 import whisper
 import pandas as pd
-from jiwer import wer, compute_measures, process_words
+from jiwer import process_words
 
 # Load the Whisper large-v2 model on GPU
 model = whisper.load_model("large-v2", device="cuda")
@@ -25,8 +25,8 @@ total_words = 0
 
 # Process each row in the CSV
 for index, row in df.iterrows():
-    wav_file_path = row['Path']
-    ground_truth_text = row['Text']
+    wav_file_path = row["Path"]
+    ground_truth_text = row["Text"]
 
     print(f"Transcribing {wav_file_path} ...")
 
@@ -37,10 +37,17 @@ for index, row in df.iterrows():
     transcription_text = result["text"]
 
     # Calculate WER
-    measures = compute_measures(ground_truth_text.lower(), transcription_text.lower())
-    current_wer = measures['wer']
-    current_errors = measures['substitutions'] + measures['deletions'] + measures['insertions']
-    current_total_words = measures['hits'] + measures['substitutions'] + measures['deletions']
+    measures = process_words(
+        ground_truth_text.lower(),
+        transcription_text.lower(),
+    )
+    current_wer = measures["wer"]
+    current_errors = (
+        measures["substitutions"] + measures["deletions"] + measures["insertions"]
+    )
+    current_total_words = (
+        measures["hits"] + measures["substitutions"] + measures["deletions"]
+    )
 
     # Update total errors and words
     total_errors += current_errors
@@ -51,7 +58,9 @@ for index, row in df.iterrows():
 
     # Append the filename, transcription, ground truth, and WER to the output file
     with open(output_file, "a") as f:
-        f.write(f"{os.path.basename(wav_file_path)}\t{transcription_text}\t{ground_truth_text}\t{wer_percentage:.2f}\n")
+        f.write(
+            f"{os.path.basename(wav_file_path)}\t{transcription_text}\t{ground_truth_text}\t{wer_percentage:.2f}\n"
+        )
 
     print(f"Transcription of {wav_file_path} done with WER: {wer_percentage:.2f}%")
 
