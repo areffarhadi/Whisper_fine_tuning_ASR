@@ -44,12 +44,13 @@ class TranscriberWER:
         self.df: pd.DataFrame = pd.read_csv(csv_file)
         self.language: str = language
         self.output_file: str = output_file
-        if "Text" in df.columns:
+        if "Text" in self.df.columns:
             self.evaluate: bool = True
             self.output_str: str = "FileName\tTranscription\tGroundTruth\tWER%\n"
             self.total_errors: int = 0
             self.total_words: int = 0
         else:
+            self.evaluate: bool = False
             print("No ground truth transcription in csv file -> no evaluation!")
             self.output_str: str = "FileName\tTranscription\n"
 
